@@ -42,6 +42,10 @@ namespace PowerMenuAnywhere
             On_CreativePowers.DifficultySliderPower.Load -= DifficultySliderPower_Load;
         }
 
+        /// <summary>
+        /// Simplified detour for injecting Creative difficulty.<br/>
+        /// Opted for local scope variables with deep copies of difficulty since managing state globally was too clunky.
+        /// </summary>
         private void CreativeDetour(Action action)
         {
             var ogDifficulty = GetDifficultySettings();
@@ -133,6 +137,9 @@ namespace PowerMenuAnywhere
             Main.GameMode = GameModeID.Creative;
         }
 
+        /// <summary>
+        /// Sets the Difficulty Slider to the game mode of the world when loading.
+        /// </summary>
         private void DifficultySliderPower_Load(On_CreativePowers.DifficultySliderPower.orig_Load orig, CreativePowers.DifficultySliderPower self, System.IO.BinaryReader reader, int gameVersionSaveWasMadeOn)
         {
             var stream = new MemoryStream();
