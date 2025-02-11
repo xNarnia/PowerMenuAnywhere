@@ -1,0 +1,9 @@
+﻿
+[h1][b]Power Menu Anywhere[/b][/h1]
+* [url=https://discord.gg/xAQGT4VetN]Discord Support Server[/url]
+* [url=https://github.com/xNarnia/PowerMenuAnywhere]Source Code[/url]
+* [url=https://steamcommunity.com/id/mznarnia/myworkshopfiles/?appid=1281930]Check out my other mods![/url]
+
+Allows you to use the Power Menu from Journey mode on any character and any world. Fully functional!
+This mod is open source! Visit the homepage for more details.
+[quote=tModLoader]Developed By Lady Narnia[/quote]

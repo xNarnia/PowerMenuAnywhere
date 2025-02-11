@@ -1,3 +1,4 @@
 Power Menu Anywhere
 
 Allows you to use the Power Menu from Journey mode on any character and any world.
+This mod is open source! Visit the homepage for more details.

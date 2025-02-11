@@ -1,31 +1,81 @@
 using Terraria;
+using Terraria.GameContent.Creative;
+using Terraria.ID;
+using Terraria.IO;
 using Terraria.ModLoader;
 
 namespace PowerMenuAnywhere
 {
 	public class PowerMenuAnywhere : Mod
-	{
-		public override void Load()
-		{
-			base.Load();
-			On.Terraria.GameContent.Creative.CreativeUI.Draw += CreativeUI_Draw;
-			On.Terraria.Main.MouseText_DrawItemTooltip_GetLinesInfo += Main_MouseText_DrawItemTooltip_GetLinesInfo;
-		}
+    {
+        public static int OGWorldDifficulty { get; set; }
+        public static byte OGPlayerDifficulty { get; set; }
+        public static int OGGameMode { get; set; }
 
-		private void Main_MouseText_DrawItemTooltip_GetLinesInfo(On.Terraria.Main.orig_MouseText_DrawItemTooltip_GetLinesInfo orig, Item item, ref int yoyoLogo, ref int researchLine, float oldKB, ref int numLines, string[] toolTipLine, bool[] preFixLine, bool[] badPreFixLine, string[] toolTipNames)
-		{
-			var ogDifficulty = Main.LocalPlayer.difficulty;
-			Main.LocalPlayer.difficulty = 3;
-			orig(item, ref yoyoLogo, ref researchLine, oldKB, ref numLines, toolTipLine, preFixLine, badPreFixLine, toolTipNames);
-			Main.LocalPlayer.difficulty = ogDifficulty;
-		}
+        public override void Load()
+        {
+            base.Load();
+            On_CreativeUI.Draw += CreativeUI_Draw;
+            On_WorldFile.SaveWorld += this.On_WorldFile_SaveWorld;
+            On_Player.SavePlayer += this.On_Player_SavePlayer;
+        }
 
-		private void CreativeUI_Draw(On.Terraria.GameContent.Creative.CreativeUI.orig_Draw orig, Terraria.GameContent.Creative.CreativeUI self, Microsoft.Xna.Framework.Graphics.SpriteBatch spriteBatch)
-		{
-			var ogDifficulty = Main.LocalPlayer.difficulty;
-			Main.LocalPlayer.difficulty = 3;
-			orig(self, spriteBatch);
-			Main.LocalPlayer.difficulty = ogDifficulty;
-		}
-	}
+        public override void Unload()
+        {
+            base.Unload();
+            On_CreativeUI.Draw -= CreativeUI_Draw;
+            On_WorldFile.SaveWorld -= this.On_WorldFile_SaveWorld;
+            On_Player.SavePlayer -= this.On_Player_SavePlayer;
+        }
+
+        private void CreativeUI_Draw(On_CreativeUI.orig_Draw orig, CreativeUI self, Microsoft.Xna.Framework.Graphics.SpriteBatch spriteBatch)
+        {
+            SetOverrideDifficultyWithCreative();
+            orig(self, spriteBatch);
+        }
+
+        private void On_Player_SavePlayer(On_Player.orig_SavePlayer orig, PlayerFileData playerFile, bool skipMapSave)
+        {
+            SetOriginalDifficulty();
+            orig(playerFile, skipMapSave);
+            SetOverrideDifficultyWithCreative();
+        }
+
+        private void On_WorldFile_SaveWorld(On_WorldFile.orig_SaveWorld orig)
+        {
+            SetOriginalDifficulty();
+            orig();
+            SetOverrideDifficultyWithCreative();
+        }
+
+        public static void SaveDifficultyState()
+        {
+            OGWorldDifficulty = Main.ActiveWorldFileData.GameMode;
+            OGPlayerDifficulty = Main.LocalPlayer.difficulty;
+            OGGameMode = Main.GameMode;
+        }
+
+        public static void SetOriginalDifficulty()
+        {
+            Main.ActiveWorldFileData.GameMode = OGWorldDifficulty;
+            Main.LocalPlayer.difficulty = OGPlayerDifficulty;
+            Main.GameMode = OGGameMode;
+        }
+
+        public static void SetOverrideDifficultyWithCreative()
+        {
+            Main.ActiveWorldFileData.GameMode = GameModeID.Creative;
+            Main.LocalPlayer.difficulty = (byte)GameModeID.Creative;
+            Main.GameMode = GameModeID.Creative;
+        }
+    }
+
+    public class PWAModSystem : ModSystem
+    {
+        public override void OnWorldLoad()
+        {
+            PowerMenuAnywhere.SaveDifficultyState();
+            PowerMenuAnywhere.SetOverrideDifficultyWithCreative();
+        }
+    }
 }
