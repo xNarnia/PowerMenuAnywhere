@@ -1,3 +1,6 @@
+using Newtonsoft.Json.Serialization;
+using System.IO;
+using System.Windows.Markup;
 using Terraria;
 using Terraria.GameContent.Creative;
 using Terraria.ID;
@@ -18,6 +21,7 @@ namespace PowerMenuAnywhere
             On_CreativeUI.Draw += CreativeUI_Draw;
             On_WorldFile.SaveWorld += this.On_WorldFile_SaveWorld;
             On_Player.SavePlayer += this.On_Player_SavePlayer;
+            On_CreativePowers.DifficultySliderPower.Load += DifficultySliderPower_Load;
         }
 
         public override void Unload()
@@ -67,6 +71,37 @@ namespace PowerMenuAnywhere
             Main.ActiveWorldFileData.GameMode = GameModeID.Creative;
             Main.LocalPlayer.difficulty = (byte)GameModeID.Creative;
             Main.GameMode = GameModeID.Creative;
+        }
+
+        private void DifficultySliderPower_Load(On_CreativePowers.DifficultySliderPower.orig_Load orig, CreativePowers.DifficultySliderPower self, System.IO.BinaryReader reader, int gameVersionSaveWasMadeOn)
+        {
+            var stream = new MemoryStream();
+            var writer = new BinaryWriter(stream);
+
+            // The slider is set in terms of "slider position"
+            // The difficulties are spaced out by quarters.
+            // So use 3rds, and have 0 be the 4th.
+            switch (Main.GameMode) {
+                case 0: // Normal
+                    writer.Write(1f / 3f);
+                    break;
+                case 1: // Expert
+                    writer.Write(2f / 3f);
+                    break;
+                case 2: 
+                    writer.Write(1f);
+                    break;
+                default:
+                    writer.Write(0f);
+                    break;
+            }
+            writer.Flush();
+            stream.Position = 0;
+
+            reader.ReadSingle();
+            var myreader = new BinaryReader(stream);
+            orig(self, myreader, gameVersionSaveWasMadeOn);
+            writer.Dispose();
         }
     }
 

@@ -6,4 +6,11 @@
 
 Allows you to use the Power Menu from Journey mode on any character and any world. Fully functional!
 This mod is open source! Visit the homepage for more details.
-[quote=tModLoader]Developed By Lady Narnia[/quote]
+
+[h2]Changelog:[/h2]
+[1.4.4.11]
+- Automatically adjust the enemy slider to match the world being entered
+[1.4.4.10]
+- Powers are now fully functional
+[1.4.4.9]
+- Add support for Terraria 1.4.4.9
