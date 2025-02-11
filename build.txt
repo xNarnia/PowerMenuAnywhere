@@ -1,5 +1,5 @@
 displayName = Power Menu Anywhere (Journey Menu)
 author = Lady Narnia
-version = 1.0
+version = 1.0.1
 includeSource = true
 includePDB=true
