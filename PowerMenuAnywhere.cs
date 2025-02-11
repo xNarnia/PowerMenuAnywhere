@@ -6,11 +6,14 @@ using Terraria.GameContent.Creative;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Microsoft.Xna.Framework.Graphics;
+using Terraria.IO;
 
 namespace PowerMenuAnywhere
 {
     public class PowerMenuAnywhere : Mod
     {
+        // Variables only used for Save protection
+        public static DifficultySettings StoredDifficulty { get; set; }
 
         public override void Load()
         {
@@ -113,6 +116,24 @@ namespace PowerMenuAnywhere
             return payload;
         }
 
+        /// <summary>
+        /// Try to prevent accidental Journey saving.
+        /// </summary>
+        private void On_Player_SavePlayer(On_Player.orig_SavePlayer orig, PlayerFileData playerFile, bool skipMapSave)
+        {
+            orig(playerFile, skipMapSave);
+            SetDifficulty(StoredDifficulty);
+        }
+
+        /// <summary>
+        /// Try to prevent accidental Journey saving.
+        /// </summary>
+        private void On_WorldFile_SaveWorld(On_WorldFile.orig_SaveWorld orig)
+        {
+            orig();
+            SetDifficulty(StoredDifficulty);
+    }
+
         public DifficultySettings GetDifficultySettings()
         {
             return new DifficultySettings()
@@ -177,5 +198,18 @@ namespace PowerMenuAnywhere
         public int OGWorldDifficulty { get; set; }
         public byte OGPlayerDifficulty { get; set; }
         public int OGGameMode { get; set; }
+    }
+
+    public class PWAModSystem : ModSystem
+    {
+        public override void OnWorldLoad()
+        {
+            PowerMenuAnywhere.StoredDifficulty = new DifficultySettings()
+            {
+                OGWorldDifficulty = Main.ActiveWorldFileData.GameMode,
+                OGPlayerDifficulty = Main.LocalPlayer.difficulty,
+                OGGameMode = Main.GameMode
+            };
+        }
     }
 }

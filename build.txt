@@ -1,5 +1,5 @@
 displayName = Power Menu Anywhere (Journey Menu - Creative)
 author = Narnia
-version = 1.4.4.12
+version = 1.4.4.14
 homepage = https://forums.terraria.org/index.php?threads/power-menu-anywhere.113089/
 includeSource = true
