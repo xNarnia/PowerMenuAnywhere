@@ -8,6 +8,8 @@ Allows you to use the Power Menu from Journey mode on any character and any worl
 This mod is open source! Visit the homepage for more details.
 
 [h2]Changelog:[/h2]
+[1.4.4.12]
+- Multiplayer support
 [1.4.4.11]
 - Automatically adjust the enemy slider to match the world being entered
 [1.4.4.10]

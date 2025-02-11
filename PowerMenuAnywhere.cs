@@ -1,75 +1,135 @@
-using Newtonsoft.Json.Serialization;
+using System;
 using System.IO;
-using System.Windows.Markup;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.GameContent.Creative;
 using Terraria.ID;
-using Terraria.IO;
 using Terraria.ModLoader;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace PowerMenuAnywhere
 {
-	public class PowerMenuAnywhere : Mod
+    public class PowerMenuAnywhere : Mod
     {
-        public static int OGWorldDifficulty { get; set; }
-        public static byte OGPlayerDifficulty { get; set; }
-        public static int OGGameMode { get; set; }
 
         public override void Load()
         {
             base.Load();
+            On_Main.UpdateCreativeGameModeOverride += Main_UpdateCreativeGameModeOverride;
             On_CreativeUI.Draw += CreativeUI_Draw;
-            On_WorldFile.SaveWorld += this.On_WorldFile_SaveWorld;
-            On_Player.SavePlayer += this.On_Player_SavePlayer;
+            On_NPC.ScaleStats += NPC_ScaleStats;
+            On_NPC.SpawnNPC += NPC_SpawnNPC;
+            On_NPC.SlimeRainSpawns += NPC_SlimeRainSpawns;
+            On_Player.GrabItems += Player_GrabItems;
+            On_Player.ResetEffects += Player_ResetEffects;
+            On_Player.GetItemGrabRange += Player_GetItemGrabRange;
+            On_Player.Hurt_PlayerDeathReason_int_int_refHurtInfo_bool_bool_int_bool_float_float_float += Player_Hurt;
             On_CreativePowers.DifficultySliderPower.Load += DifficultySliderPower_Load;
         }
 
         public override void Unload()
         {
             base.Unload();
+            On_Main.UpdateCreativeGameModeOverride -= Main_UpdateCreativeGameModeOverride;
             On_CreativeUI.Draw -= CreativeUI_Draw;
-            On_WorldFile.SaveWorld -= this.On_WorldFile_SaveWorld;
-            On_Player.SavePlayer -= this.On_Player_SavePlayer;
+            On_NPC.ScaleStats -= NPC_ScaleStats;
+            On_NPC.SpawnNPC -= NPC_SpawnNPC;
+            On_NPC.SlimeRainSpawns -= NPC_SlimeRainSpawns;
+            On_Player.GrabItems -= Player_GrabItems;
+            On_Player.ResetEffects -= Player_ResetEffects;
+            On_Player.GetItemGrabRange -= Player_GetItemGrabRange;
+            On_Player.Hurt_PlayerDeathReason_int_int_refHurtInfo_bool_bool_int_bool_float_float_float -= Player_Hurt;
+            On_CreativePowers.DifficultySliderPower.Load -= DifficultySliderPower_Load;
         }
 
-        private void CreativeUI_Draw(On_CreativeUI.orig_Draw orig, CreativeUI self, Microsoft.Xna.Framework.Graphics.SpriteBatch spriteBatch)
+        private void CreativeDetour(Action action)
         {
-            SetOverrideDifficultyWithCreative();
-            orig(self, spriteBatch);
+            var ogDifficulty = GetDifficultySettings();
+            SetCreativeDifficulty();
+            action.Invoke();
+            SetDifficulty(ogDifficulty);
         }
 
-        private void On_Player_SavePlayer(On_Player.orig_SavePlayer orig, PlayerFileData playerFile, bool skipMapSave)
+        /// <summary>
+        /// Applies difficulty overrides based on Difficulty Slider.
+        /// </summary>
+        private void Main_UpdateCreativeGameModeOverride(On_Main.orig_UpdateCreativeGameModeOverride orig) => CreativeDetour(() => orig());
+        
+        /// <summary>
+        /// Forces the Power Menu to show even if it's not a Journey character or world.
+        /// </summary>
+        private void CreativeUI_Draw(On_CreativeUI.orig_Draw orig, CreativeUI self, SpriteBatch spriteBatch) => CreativeDetour(() => orig(self, spriteBatch));
+
+        /// <summary>
+        /// Enables StrengthMultiplierToGiveNPCs.
+        /// </summary>
+        private void NPC_ScaleStats(On_NPC.orig_ScaleStats orig, NPC self, int? activePlayersCount, GameModeData gameModeData, float? strengthOverride) => CreativeDetour(() => orig(self, activePlayersCount, gameModeData, strengthOverride));
+
+        /// <summary>
+        /// Enables SpawnRateSliderPerPlayerPower.
+        /// </summary>
+        private void NPC_SpawnNPC(On_NPC.orig_SpawnNPC orig) => CreativeDetour(() => orig());
+
+        /// <summary>
+        /// Enables SpawnRateSliderPerPlayerPower for Slime Rain.
+        /// </summary>
+        private void NPC_SlimeRainSpawns(On_NPC.orig_SlimeRainSpawns orig, int plr) => CreativeDetour(() => orig(plr));
+
+        /// <summary>
+        /// Enables FarPlacementRangePower.
+        /// </summary>
+        private void Player_GrabItems(On_Player.orig_GrabItems orig, Player self, int i) => CreativeDetour(() => orig(self, i));
+
+        /// <summary>
+        /// Enables FarPlacementRangePower.
+        /// </summary>
+        private void Player_ResetEffects(On_Player.orig_ResetEffects orig, Player self) => CreativeDetour(() => orig(self));
+
+        /// <summary>
+        /// Enables FarPlacementRangePower.
+        /// </summary>
+        private int Player_GetItemGrabRange(On_Player.orig_GetItemGrabRange orig, Player self, Item item)
         {
-            SetOriginalDifficulty();
-            orig(playerFile, skipMapSave);
-            SetOverrideDifficultyWithCreative();
+            var ogDifficulty = GetDifficultySettings();
+            SetCreativeDifficulty();
+            var payload = orig(self, item);
+            SetDifficulty(ogDifficulty);
+            return payload;
         }
 
-        private void On_WorldFile_SaveWorld(On_WorldFile.orig_SaveWorld orig)
+        /// <summary>
+        /// Enables damage scaling from Enemy Difficulty.
+        /// </summary>
+        private double Player_Hurt(On_Player.orig_Hurt_PlayerDeathReason_int_int_refHurtInfo_bool_bool_int_bool_float_float_float orig, Player self, Terraria.DataStructures.PlayerDeathReason damageSource, int Damage, int hitDirection, out Player.HurtInfo info, bool pvp, bool quiet, int cooldownCounter, bool dodgeable, float armorPenetration, float scalingArmorPenetration, float knockback)
         {
-            SetOriginalDifficulty();
-            orig();
-            SetOverrideDifficultyWithCreative();
+            var ogDifficulty = GetDifficultySettings();
+            SetCreativeDifficulty();
+            var payload = orig(self, damageSource, Damage, hitDirection, out info, pvp, quiet, cooldownCounter, dodgeable, armorPenetration, scalingArmorPenetration, knockback);
+            SetDifficulty(ogDifficulty);
+            return payload;
         }
 
-        public static void SaveDifficultyState()
+        public DifficultySettings GetDifficultySettings()
         {
-            OGWorldDifficulty = Main.ActiveWorldFileData.GameMode;
-            OGPlayerDifficulty = Main.LocalPlayer.difficulty;
-            OGGameMode = Main.GameMode;
+            return new DifficultySettings()
+            {
+                OGWorldDifficulty = Main.ActiveWorldFileData.GameMode,
+                OGPlayerDifficulty = Main.LocalPlayer.difficulty,
+                OGGameMode = Main.GameMode
+            };
         }
 
-        public static void SetOriginalDifficulty()
+        public void SetDifficulty(DifficultySettings settings)
         {
-            Main.ActiveWorldFileData.GameMode = OGWorldDifficulty;
-            Main.LocalPlayer.difficulty = OGPlayerDifficulty;
-            Main.GameMode = OGGameMode;
+            Main.ActiveWorldFileData.GameMode = settings.OGWorldDifficulty;
+            Main.LocalPlayer.difficulty = settings.OGPlayerDifficulty;
+            Main.GameMode = settings.OGGameMode;
         }
 
-        public static void SetOverrideDifficultyWithCreative()
+        public void SetCreativeDifficulty()
         {
             Main.ActiveWorldFileData.GameMode = GameModeID.Creative;
-            Main.LocalPlayer.difficulty = (byte)GameModeID.Creative;
+            Main.LocalPlayer.difficulty = (byte)PlayerDifficultyID.Creative;
             Main.GameMode = GameModeID.Creative;
         }
 
@@ -105,12 +165,10 @@ namespace PowerMenuAnywhere
         }
     }
 
-    public class PWAModSystem : ModSystem
+    public class DifficultySettings
     {
-        public override void OnWorldLoad()
-        {
-            PowerMenuAnywhere.SaveDifficultyState();
-            PowerMenuAnywhere.SetOverrideDifficultyWithCreative();
-        }
+        public int OGWorldDifficulty { get; set; }
+        public byte OGPlayerDifficulty { get; set; }
+        public int OGGameMode { get; set; }
     }
 }
